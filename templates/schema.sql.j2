@@ -1,0 +1,46 @@
+-- Generado automáticamente por SystemDSL
+-- Sistema: {{ model.name }} v{{ model.version }}
+-- NO EDITAR MANUALMENTE
+
+{% for entity in model.entities %}
+CREATE TABLE IF NOT EXISTS {{ entity.name | lower }} (
+    id SERIAL PRIMARY KEY,
+{% for field in entity.fields %}
+{% if field.type == 'String' %}
+    {{ field.name }} TEXT
+{%- elif field.type == 'Integer' %}
+    {{ field.name }} INTEGER
+{%- elif field.type == 'Float' %}
+    {{ field.name }} FLOAT
+{%- elif field.type == 'Boolean' %}
+    {{ field.name }} BOOLEAN
+{%- elif field.type == 'DateTime' %}
+    {{ field.name }} TIMESTAMP
+{%- elif field.type in enum_names %}
+    {{ field.name }} TEXT
+{%- endif %}
+{%- if field.required %} NOT NULL{% endif %}
+{%- if field.unique %} UNIQUE{% endif %}
+{%- if field.default %}
+{%- if field.default == 'now()' %} DEFAULT CURRENT_TIMESTAMP
+{%- elif field.type == 'Boolean' %} DEFAULT {{ field.default }}
+{%- elif field.type in ('Integer', 'Float') %} DEFAULT {{ field.default }}
+{%- elif field.type in enum_names %} DEFAULT '{{ field.default }}'
+{%- else %} DEFAULT '{{ field.default }}'
+{%- endif %}
+{%- endif %}
+{%- if field.type in enum_names %}
+{%- set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
+ CHECK ({{ field.name }} IN ({{ enum.values | pg_values }}))
+{%- endif %},
+{% endfor %}
+{% for relation in model.relations | selectattr('from_entity', 'equalto', entity.name) %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+    {{ relation.role | default(relation.to_entity | lower) }}_id INTEGER
+{%- if relation.required %} NOT NULL{% endif %}
+ REFERENCES {{ relation.to_entity | lower }}(id),
+{% endif %}
+{% endfor %}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+{% endfor %}

@@ -1,0 +1,170 @@
+openapi: "3.0.3"
+info:
+  title: "{{ model.name }}"
+  version: "{{ model.version }}"
+
+paths:
+{% for entity in model.entities %}
+{% set table = entity.name | lower %}
+{% set path  = '/' + table + 's' %}
+
+  {{ path }}:
+    get:
+      summary: "Listar {{ entity.name }}s"
+      operationId: "list_{{ table }}s"
+      responses:
+        "200":
+          description: "Lista de {{ entity.name }}s"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/{{ entity.name }}"
+
+    post:
+      summary: "Crear {{ entity.name }}"
+      operationId: "create_{{ table }}"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{{ entity.name }}Create"
+      responses:
+        "201":
+          description: "{{ entity.name }} creado"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/{{ entity.name }}"
+
+  {{ path }}/{id}:
+    get:
+      summary: "Obtener {{ entity.name }} por ID"
+      operationId: "get_{{ table }}"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: "{{ entity.name }} encontrado"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/{{ entity.name }}"
+        "404":
+          description: "No encontrado"
+
+    put:
+      summary: "Actualizar {{ entity.name }}"
+      operationId: "update_{{ table }}"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{{ entity.name }}Create"
+      responses:
+        "200":
+          description: "{{ entity.name }} actualizado"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/{{ entity.name }}"
+        "404":
+          description: "No encontrado"
+
+    delete:
+      summary: "Eliminar {{ entity.name }}"
+      operationId: "delete_{{ table }}"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: "Eliminado correctamente"
+        "404":
+          description: "No encontrado"
+
+{% endfor %}
+
+components:
+  schemas:
+{% for enum in model.enums %}
+    {{ enum.name }}:
+      type: string
+      enum: [{{ enum.values | join(', ') }}]
+
+{% endfor %}
+{% for entity in model.entities %}
+{% set entity_relations = model.relations | selectattr('from_entity', 'equalto', entity.name) | list %}
+
+    {{ entity.name }}Create:
+      type: object
+      properties:
+{% for field in entity.fields %}
+{% if field.type == 'String' %}
+        {{ field.name }}:
+          type: string
+{% if field.max is not none %}
+          maxLength: {{ field.max | int }}
+{% endif %}
+{% elif field.type == 'Integer' %}
+        {{ field.name }}:
+          type: integer
+{% elif field.type == 'Float' %}
+        {{ field.name }}:
+          type: number
+{% elif field.type == 'Boolean' %}
+        {{ field.name }}:
+          type: boolean
+{% elif field.type == 'DateTime' %}
+        {{ field.name }}:
+          type: string
+          format: date-time
+{% elif field.type in enum_names %}
+        {{ field.name }}:
+          $ref: "#/components/schemas/{{ field.type }}"
+{% endif %}
+{% endfor %}
+{% for relation in entity_relations %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+        {{ relation.role | default(relation.to_entity | lower) }}_id:
+          type: integer
+{% endif %}
+{% endfor %}
+      required:
+{% for field in entity.fields if field.required %}
+        - {{ field.name }}
+{% endfor %}
+{% for relation in entity_relations if relation.required %}
+        - {{ relation.role | default(relation.to_entity | lower) }}_id
+{% endfor %}
+
+    {{ entity.name }}:
+      allOf:
+        - $ref: "#/components/schemas/{{ entity.name }}Create"
+        - type: object
+          properties:
+            id:
+              type: integer
+            created_at:
+              type: string
+              format: date-time
+          required:
+            - id
+
+{% endfor %}

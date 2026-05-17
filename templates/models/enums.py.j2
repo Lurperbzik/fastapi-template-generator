@@ -1,0 +1,13 @@
+# Generado automáticamente por SystemDSL
+# Sistema: {{ model.name }} v{{ model.version }}
+# NO EDITAR MANUALMENTE
+
+from enum import Enum
+
+{% for enum in model.enums %}
+class {{ enum.name }}(str, Enum):
+{% for value in enum.values %}
+    {{ value }} = "{{ value }}"
+{% endfor %}
+
+{% endfor %}

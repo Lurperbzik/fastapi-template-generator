@@ -1,0 +1,7 @@
+# Generado automáticamente por SystemDSL
+# NO EDITAR MANUALMENTE
+
+from models.enums import *
+{% for entity in model.entities %}
+from models.{{ entity.name | lower }} import {{ entity.name }}, {{ entity.name }}Create, {{ entity.name }}Base
+{% endfor %}

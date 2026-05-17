@@ -1,0 +1,54 @@
+# Generado automáticamente por SystemDSL
+# Sistema: {{ model.name }} v{{ model.version }}
+# NO EDITAR MANUALMENTE
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL no está definida en el entorno")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SCHEMA   = open(os.path.join(BASE_DIR, "schema.sql")).read()
+
+engine       = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
+
+# Mapa de columnas BD (minúsculas) → campos modelo (camelCase)
+# Mapa de columnas BD (minúsculas) → campos modelo (camelCase)
+COLUMN_MAP = {
+{% for entity in model.entities %}
+{% for field in entity.fields %}
+{% if field.name != field.name | lower %}
+    "{{ field.name | lower }}": "{{ field.name }}",
+{% endif %}
+{% endfor %}
+{% set entity_relations = model.relations | selectattr('from_entity', 'equalto', entity.name) | list %}
+{% for relation in entity_relations %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+{% set role = relation.role | default(relation.to_entity | lower) %}
+{% if role != role | lower %}
+    "{{ role | lower }}_id": "{{ role }}_id",
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+}
+
+def normalize_row(row: dict) -> dict:
+    return {COLUMN_MAP.get(k, k): v for k, v in row.items()}
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()

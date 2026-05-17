@@ -1,0 +1,32 @@
+# Generado automáticamente por SystemDSL
+# Sistema: {{ model.name }} v{{ model.version }}
+# NO EDITAR MANUALMENTE
+
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from database import engine, SCHEMA
+from sqlalchemy import text
+
+{% for entity in model.entities %}
+from routers.{{ entity.name | lower }} import router as {{ entity.name | lower }}_router
+{% endfor %}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    with engine.connect() as conn:
+        for statement in SCHEMA.split(";"):
+            stmt = statement.strip()
+            if stmt:
+                conn.execute(text(stmt))
+        conn.commit()
+    yield
+
+app = FastAPI(
+    title="{{ model.name }}",
+    version="{{ model.version }}",
+    lifespan=lifespan
+)
+
+{% for entity in model.entities %}
+app.include_router({{ entity.name | lower }}_router)
+{% endfor %}

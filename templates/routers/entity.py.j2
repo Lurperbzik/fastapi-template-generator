@@ -1,0 +1,92 @@
+# Generado automáticamente por SystemDSL
+# Entidad: {{ entity.name }}
+# NO EDITAR MANUALMENTE
+
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from database import get_db, normalize_row
+from models.{{ entity.name | lower }} import {{ entity.name }}, {{ entity.name }}Create
+
+{% set table = entity.name | lower %}
+{% set path  = '/' + entity.name | lower + 's' %}
+
+router = APIRouter(prefix="{{ path }}", tags=["{{ entity.name }}"])
+
+@router.get("", response_model=list[{{ entity.name }}])
+def list_{{ table }}s(db: Session = Depends(get_db)):
+    rows = db.execute(text("SELECT * FROM {{ table }}")).fetchall()
+    return [normalize_row(dict(r._mapping)) for r in rows]
+
+@router.get("/{id}", response_model={{ entity.name }})
+def get_{{ table }}(id: int, db: Session = Depends(get_db)):
+    row = db.execute(
+        text("SELECT * FROM {{ table }} WHERE id = :id"), {"id": id}
+    ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="{{ entity.name }} no encontrado")
+    return normalize_row(dict(row._mapping))
+
+@router.post("", response_model={{ entity.name }}, status_code=201)
+def create_{{ table }}(data: {{ entity.name }}Create, db: Session = Depends(get_db)):
+    try:
+        fields = data.model_dump(exclude_none=True, mode="json")
+        fields = {k.lower(): v for k, v in fields.items()}
+        cols   = ", ".join(fields.keys())
+        vals   = ", ".join(f":{k}" for k in fields.keys())
+        result = db.execute(
+            text(f"INSERT INTO {{ table }} ({cols}) VALUES ({vals}) RETURNING id"),
+            fields
+        )
+        db.commit()
+        new_id = result.fetchone()[0]
+        row = db.execute(
+            text("SELECT * FROM {{ table }} WHERE id = :id"),
+            {"id": new_id}
+        ).fetchone()
+        return normalize_row(dict(row._mapping))
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/{id}", response_model={{ entity.name }})
+def update_{{ table }}(id: int, data: {{ entity.name }}Create, db: Session = Depends(get_db)):
+    try:
+        fields = data.model_dump(exclude_none=True, mode="json")
+        fields = {k.lower(): v for k, v in fields.items()}
+        if not fields:
+            raise HTTPException(status_code=400, detail="No hay campos para actualizar")
+        sets   = ", ".join(f"{k} = :{k}" for k in fields.keys())
+        fields["id"] = id
+        cursor = db.execute(
+            text(f"UPDATE {{ table }} SET {sets} WHERE id = :id"), fields
+        )
+        db.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="{{ entity.name }} no encontrado")
+        row = db.execute(
+            text("SELECT * FROM {{ table }} WHERE id = :id"), {"id": id}
+        ).fetchone()
+        return normalize_row(dict(row._mapping))
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{id}", status_code=204)
+def delete_{{ table }}(id: int, db: Session = Depends(get_db)):
+    try:
+        cursor = db.execute(
+            text("DELETE FROM {{ table }} WHERE id = :id"), {"id": id}
+        )
+        db.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="{{ entity.name }} no encontrado")
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

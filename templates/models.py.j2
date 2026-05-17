@@ -1,0 +1,63 @@
+# Generado automáticamente por SystemDSL
+# Sistema: {{ model.name }} v{{ model.version }}
+# NO EDITAR MANUALMENTE
+
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
+from enum import Enum
+
+{% for enum in model.enums %}
+class {{ enum.name }}(str, Enum):
+{% for value in enum.values %}
+    {{ value }} = "{{ value }}"
+{% endfor %}
+
+{% endfor %}
+{% for entity in model.entities %}
+{% set entity_relations = model.relations | selectattr('from_entity', 'equalto', entity.name) | list %}
+
+class {{ entity.name }}Base(BaseModel):
+{% for field in entity.fields %}
+{% if field.type == 'String' %}
+{% set py_type = 'str' %}
+{% elif field.type == 'Integer' %}
+{% set py_type = 'int' %}
+{% elif field.type == 'Float' %}
+{% set py_type = 'float' %}
+{% elif field.type == 'Boolean' %}
+{% set py_type = 'bool' %}
+{% elif field.type == 'DateTime' %}
+{% set py_type = 'datetime' %}
+{% else %}
+{% set py_type = field.type %}
+{% endif %}
+{% if field.required %}
+    {{ field.name }}: {{ py_type }}{% if field.max is not none %} = Field(..., max_length={{ field.max | int }}){% endif %}
+
+{% else %}
+    {{ field.name }}: Optional[{{ py_type }}] = {% if field.default == 'now()' %}None{% elif field.default is not none %}"{{ field.default }}"{% else %}None{% endif %}
+
+{% endif %}
+{% endfor %}
+{% for relation in entity_relations %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+{% if relation.required %}
+    {{ relation.role | default(relation.to_entity | lower) }}_id: int
+{% else %}
+    {{ relation.role | default(relation.to_entity | lower) }}_id: Optional[int] = None
+{% endif %}
+{% endif %}
+{% endfor %}
+
+class {{ entity.name }}Create({{ entity.name }}Base):
+    pass
+
+class {{ entity.name }}({{ entity.name }}Base):
+    id: int
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+{% endfor %}

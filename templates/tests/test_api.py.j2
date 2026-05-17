@@ -1,0 +1,226 @@
+# Generado automáticamente por SystemDSL
+# Sistema: {{ model.name }} v{{ model.version }}
+# NO EDITAR MANUALMENTE
+#
+# Requisitos: pip install pytest httpx
+# Uso:        pytest tests/test_api.py -v
+# Nota:       requiere la API levantada en BASE_URL
+
+import pytest
+import httpx
+import time
+
+BASE_URL = "http://localhost:8000"
+RUN_ID   = str(int(time.time()))
+
+# ─── Cliente ─────────────────────────────────────────────────
+
+@pytest.fixture(scope="module")
+def client():
+    with httpx.Client(base_url=BASE_URL) as c:
+        yield c
+
+{% set ns = namespace() %}
+
+{% for entity in model.entities %}
+{% set table   = entity.name | lower %}
+{% set plural  = table + 's' %}
+{% set path    = '/' + plural %}
+{% set entity_relations = model.relations | selectattr('from_entity', 'equalto', entity.name) | list %}
+{% set required_relations = entity_relations | selectattr('required') | list %}
+
+# ─── Fixture: {{ entity.name }} ──────────────────────────────
+
+@pytest.fixture(scope="module")
+def {{ table }}_id(client
+{%- for relation in required_relations %}
+{%- if relation.type in ('many-to-one', 'one-to-one') %}
+, {{ relation.to_entity | lower }}_id
+{%- endif %}
+{%- endfor %}):
+    payload = {
+{% for field in entity.fields if field.required %}
+{% if field.type == 'String' %}
+        "{{ field.name }}": "test_{{ field.name }}_{{ loop.index }}_{RUN_ID}",
+{% elif field.type == 'Integer' %}
+        "{{ field.name }}": {{ loop.index }},
+{% elif field.type == 'Float' %}
+        "{{ field.name }}": {{ loop.index }}.0,
+{% elif field.type == 'Boolean' %}
+        "{{ field.name }}": true,
+{% elif field.type in enum_names %}
+{% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
+        "{{ field.name }}": "{{ enum.values[0] }}",
+{% endif %}
+{% endfor %}
+{% for relation in required_relations %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+        "{{ relation.role | default(relation.to_entity | lower) }}_id": {{ relation.to_entity | lower }}_id,
+{% endif %}
+{% endfor %}
+    }
+    r = client.post("{{ path }}", json=payload)
+    assert r.status_code == 201, f"Error al crear fixture {{ entity.name }}: {r.text}"
+    return r.json()["id"]
+
+# ─── Tests: {{ entity.name }} ────────────────────────────────
+
+class Test{{ entity.name }}:
+
+    def test_crear_{{ table }}(self, client
+{%- for relation in required_relations %}
+{%- if relation.type in ('many-to-one', 'one-to-one') %}
+, {{ relation.to_entity | lower }}_id
+{%- endif %}
+{%- endfor %}):
+        payload = {
+{% for field in entity.fields if field.required %}
+{% if field.type == 'String' %}
+            "{{ field.name }}": "test_crear_{{ field.name }}_{RUN_ID}",
+{% elif field.type == 'Integer' %}
+            "{{ field.name }}": {{ loop.index }},
+{% elif field.type == 'Float' %}
+            "{{ field.name }}": {{ loop.index }}.0,
+{% elif field.type == 'Boolean' %}
+            "{{ field.name }}": true,
+{% elif field.type in enum_names %}
+{% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
+            "{{ field.name }}": "{{ enum.values[0] }}",
+{% endif %}
+{% endfor %}
+{% for relation in required_relations %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+            "{{ relation.role | default(relation.to_entity | lower) }}_id": {{ relation.to_entity | lower }}_id,
+{% endif %}
+{% endfor %}
+        }
+        r = client.post("{{ path }}", json=payload)
+        assert r.status_code == 201
+        data = r.json()
+        assert "id" in data
+{% for field in entity.fields if field.required %}
+        assert "{{ field.name }}" in data
+{% endfor %}
+
+    def test_crear_{{ table }}_sin_campos_requeridos_falla(self, client):
+        r = client.post("{{ path }}", json={})
+        assert r.status_code == 422
+
+    def test_listar_{{ plural }}(self, client, {{ table }}_id):
+        r = client.get("{{ path }}")
+        assert r.status_code == 200
+        assert isinstance(r.json(), list)
+        assert len(r.json()) >= 1
+
+    def test_obtener_{{ table }}(self, client, {{ table }}_id):
+        r = client.get(f"{{ path }}/{ {{ table }}_id}")
+        assert r.status_code == 200
+        assert r.json()["id"] == {{ table }}_id
+
+    def test_obtener_{{ table }}_inexistente(self, client):
+        r = client.get("{{ path }}/99999")
+        assert r.status_code == 404
+
+    def test_actualizar_{{ table }}(self, client, {{ table }}_id
+{%- for relation in required_relations %}
+{%- if relation.type in ('many-to-one', 'one-to-one') %}
+, {{ relation.to_entity | lower }}_id
+{%- endif %}
+{%- endfor %}):
+        payload = {
+{% for field in entity.fields if field.required %}
+{% if field.type == 'String' %}
+            "{{ field.name }}": "test_actualizar_{{ field.name }}_{RUN_ID}",
+{% elif field.type == 'Integer' %}
+            "{{ field.name }}": {{ loop.index + 10 }},
+{% elif field.type == 'Float' %}
+            "{{ field.name }}": {{ loop.index + 10 }}.0,
+{% elif field.type == 'Boolean' %}
+            "{{ field.name }}": false,
+{% elif field.type in enum_names %}
+{% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
+            "{{ field.name }}": "{{ enum.values[0] }}",
+{% endif %}
+{% endfor %}
+{% for relation in required_relations %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+            "{{ relation.role | default(relation.to_entity | lower) }}_id": {{ relation.to_entity | lower }}_id,
+{% endif %}
+{% endfor %}
+        }
+        r = client.put(f"{{ path }}/{ {{ table }}_id}", json=payload)
+        assert r.status_code == 200
+        assert r.json()["id"] == {{ table }}_id
+
+    def test_actualizar_{{ table }}_inexistente(self, client
+{%- for relation in required_relations %}
+{%- if relation.type in ('many-to-one', 'one-to-one') %}
+, {{ relation.to_entity | lower }}_id
+{%- endif %}
+{%- endfor %}):
+        payload = {
+{% for field in entity.fields if field.required %}
+{% if field.type == 'String' %}
+            "{{ field.name }}": "test_inexistente_{RUN_ID}",
+{% elif field.type == 'Integer' %}
+            "{{ field.name }}": {{ loop.index }},
+{% elif field.type == 'Float' %}
+            "{{ field.name }}": {{ loop.index }}.0,
+{% elif field.type == 'Boolean' %}
+            "{{ field.name }}": true,
+{% elif field.type in enum_names %}
+{% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
+            "{{ field.name }}": "{{ enum.values[0] }}",
+{% endif %}
+{% endfor %}
+{% for relation in required_relations %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+            "{{ relation.role | default(relation.to_entity | lower) }}_id": {{ relation.to_entity | lower }}_id,
+{% endif %}
+{% endfor %}
+        }
+        r = client.put("{{ path }}/99999", json=payload)
+        assert r.status_code == 404
+
+    def test_eliminar_{{ table }}(self, client
+{%- for relation in required_relations %}
+{%- if relation.type in ('many-to-one', 'one-to-one') %}
+, {{ relation.to_entity | lower }}_id
+{%- endif %}
+{%- endfor %}):
+        payload = {
+{% for field in entity.fields if field.required %}
+{% if field.type == 'String' %}
+            "{{ field.name }}": "test_eliminar_{{ field.name }}_{RUN_ID}",
+{% elif field.type == 'Integer' %}
+            "{{ field.name }}": {{ loop.index }},
+{% elif field.type == 'Float' %}
+            "{{ field.name }}": {{ loop.index }}.0,
+{% elif field.type == 'Boolean' %}
+            "{{ field.name }}": true,
+{% elif field.type in enum_names %}
+{% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
+            "{{ field.name }}": "{{ enum.values[0] }}",
+{% endif %}
+{% endfor %}
+{% for relation in required_relations %}
+{% if relation.type in ('many-to-one', 'one-to-one') %}
+            "{{ relation.role | default(relation.to_entity | lower) }}_id": {{ relation.to_entity | lower }}_id,
+{% endif %}
+{% endfor %}
+        }
+        r = client.post("{{ path }}", json=payload)
+        assert r.status_code == 201
+        eid = r.json()["id"]
+
+        r = client.delete(f"{{ path }}/{eid}")
+        assert r.status_code == 204
+
+        r = client.get(f"{{ path }}/{eid}")
+        assert r.status_code == 404
+
+    def test_eliminar_{{ table }}_inexistente(self, client):
+        r = client.delete("{{ path }}/99999")
+        assert r.status_code == 404
+
+{% endfor %}
