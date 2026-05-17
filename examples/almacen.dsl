@@ -232,32 +232,3 @@ relations {
     }
 
 }
-
-rules {
-
-    rule {
-        entity: Pedido
-        rule: "fechaEntregaReal must be null when estado != ENTREGADO"
-    }
-
-    rule {
-        entity: Pedido
-        rule: "gestionadoPor must not be null when estado == EN_PREPARACION or estado == ENVIADO"
-    }
-
-    rule {
-        entity: Producto
-        rule: "stockActual must be greater than or equal to 0"
-    }
-
-    rule {
-        entity: LineaPedido
-        rule: "cantidad must be greater than 0"
-    }
-
-    rule {
-        entity: MovimientoStock
-        rule: "pedidoOrigen must not be null when tipo == ENTRADA"
-    }
-
-}

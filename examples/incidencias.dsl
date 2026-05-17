@@ -115,17 +115,3 @@ relations {
     }
 
 }
-
-rules {
-
-    rule {
-        entity: Ticket
-        rule: "fechaCierre must be null when estado != RESUELTO and estado != CERRADO"
-    }
-
-    rule {
-        entity: Ticket
-        rule: "asignadoA must not be null when estado == EN_PROGRESO"
-    }
-
-}
