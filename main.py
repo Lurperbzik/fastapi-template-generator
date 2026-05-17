@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import subprocess
+import shutil
 
 from antlr4 import FileStream, CommonTokenStream
 from generated.SystemDSLLexer import SystemDSLLexer
@@ -40,6 +41,14 @@ def cmd_generate(args):
         sys.exit(1)
     print(f"Compilando '{args.dsl}'...")
     model = parse_dsl(args.dsl)
+
+    # limpiar output previo
+    if os.path.exists(args.output):
+        print(f"Limpiando directorio '{args.output}'...")
+        shutil.rmtree(args.output)
+
+    # recrear directorio vacío
+    os.makedirs(args.output, exist_ok=True)
     Generator(
         model,
         output_dir=args.output,
