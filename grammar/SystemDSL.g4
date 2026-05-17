@@ -6,7 +6,6 @@ model
       enumsBlock
       entitiesBlock
       relationsBlock
-      rulesBlock
       EOF
     ;
 
@@ -94,20 +93,6 @@ cardinality
     | 'one-to-many'
     | 'many-to-one'
     | 'many-to-many'
-    ;
-
-// ─── Reglas de negocio ────────────────────────────────────────
-rulesBlock
-    : 'rules' '{' ruleDecl* '}'
-    ;
-
-ruleDecl
-    : 'rule' '{' ruleProp+ '}'
-    ;
-
-ruleProp
-    : 'entity' ':' ID
-    | 'rule'   ':' STRING
     ;
 
 // ─── TOKENS ───────────────────────────────────────────────────

@@ -25,7 +25,6 @@ class SemanticValidator:
         self._validate_enums()
         self._validate_entities()
         self._validate_relations()
-        self._validate_rules()
 
         if self.errors:
             msg = "\n".join(f"  - {e}" for e in self.errors)
@@ -190,19 +189,6 @@ class SemanticValidator:
                         f"'{r.to_entity}' requieren 'role' en ambas"
                     )
             seen[key] = r
-
-    # ─── Reglas ───────────────────────────────────────────────
-
-    def _validate_rules(self):
-        for r in self.model.rules:
-            if r.entity not in self.entity_names:
-                self._error(
-                    f"Regla referencia entidad desconocida: '{r.entity}'"
-                )
-            if not r.rule or not r.rule.strip():
-                self._error(
-                    f"Regla vacía en entidad '{r.entity}'"
-                )
 
     # ─── Utilidad ─────────────────────────────────────────────
 

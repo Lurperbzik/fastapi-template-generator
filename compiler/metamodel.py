@@ -29,10 +29,6 @@ class RelationDef:
     role: Optional[str] = None
     required: bool = False
 
-@dataclass
-class RuleDef:
-    entity: str
-    rule: str
 
 @dataclass
 class SystemModel:
@@ -41,4 +37,3 @@ class SystemModel:
     enums: list[EnumDef] = field(default_factory=list)
     entities: list[EntityDef] = field(default_factory=list)
     relations: list[RelationDef] = field(default_factory=list)
-    rules: list[RuleDef] = field(default_factory=list)

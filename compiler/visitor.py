@@ -1,7 +1,7 @@
-from generated.SystemDSLVisitor import SystemDSLVisitor
+from generated.grammar.SystemDSLVisitor import SystemDSLVisitor
 from .metamodel import (
     SystemModel, EnumDef, EntityDef,
-    FieldDef, RelationDef, RuleDef
+    FieldDef, RelationDef
 )
 
 class ModelBuilder(SystemDSLVisitor):
@@ -17,9 +17,6 @@ class ModelBuilder(SystemDSLVisitor):
 
         for relation_ctx in ctx.relationsBlock().relationDecl():
             system.relations.append(self.visit(relation_ctx))
-
-        for rule_ctx in ctx.rulesBlock().ruleDecl():
-            system.rules.append(self.visit(rule_ctx))
 
         return system
 
@@ -83,15 +80,4 @@ class ModelBuilder(SystemDSLVisitor):
 
         return RelationDef(**props)
 
-    def visitRuleDecl(self, ctx):
-        props = {}
-        for prop in ctx.ruleProp():
-            key = prop.getChild(0).getText()
-            val = prop.getChild(2).getText()
-
-            if key == 'entity':
-                props['entity'] = val
-            elif key == 'rule':
-                props['rule'] = val.strip('"')
-
-        return RuleDef(**props)
+    
