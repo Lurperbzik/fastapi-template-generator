@@ -41,13 +41,14 @@ def {{ table }}_id(client
     payload = {
 {% for field in entity.fields if field.required %}
 {% if field.type == 'String' %}
-        "{{ field.name }}": "test_{{ field.name }}_{{ loop.index }}_{RUN_ID}",
+{% set field_val = "test_" + field.name + "_" + loop.index|string + "_" %}
+        "{{ field.name }}": "{{ field_val }}" + RUN_ID,
 {% elif field.type == 'Integer' %}
         "{{ field.name }}": {{ loop.index }},
 {% elif field.type == 'Float' %}
         "{{ field.name }}": {{ loop.index }}.0,
 {% elif field.type == 'Boolean' %}
-        "{{ field.name }}": true,
+        "{{ field.name }}": True,
 {% elif field.type in enum_names %}
 {% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
         "{{ field.name }}": "{{ enum.values[0] }}",
@@ -76,13 +77,14 @@ class Test{{ entity.name }}:
         payload = {
 {% for field in entity.fields if field.required %}
 {% if field.type == 'String' %}
-            "{{ field.name }}": "test_crear_{{ field.name }}_{RUN_ID}",
+{% set field_val = "test_crear_" + field.name + "_" + loop.index|string + "_" %}
+            "{{ field.name }}": "{{ field_val }}" + RUN_ID,
 {% elif field.type == 'Integer' %}
             "{{ field.name }}": {{ loop.index }},
 {% elif field.type == 'Float' %}
             "{{ field.name }}": {{ loop.index }}.0,
 {% elif field.type == 'Boolean' %}
-            "{{ field.name }}": true,
+            "{{ field.name }}": True,
 {% elif field.type in enum_names %}
 {% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
             "{{ field.name }}": "{{ enum.values[0] }}",
@@ -130,13 +132,14 @@ class Test{{ entity.name }}:
         payload = {
 {% for field in entity.fields if field.required %}
 {% if field.type == 'String' %}
-            "{{ field.name }}": "test_actualizar_{{ field.name }}_{RUN_ID}",
+{% set field_val = "test_upd_" + field.name + "_" + loop.index|string + "_" %}
+            "{{ field.name }}": "{{ field_val }}" + RUN_ID,
 {% elif field.type == 'Integer' %}
             "{{ field.name }}": {{ loop.index + 10 }},
 {% elif field.type == 'Float' %}
             "{{ field.name }}": {{ loop.index + 10 }}.0,
 {% elif field.type == 'Boolean' %}
-            "{{ field.name }}": false,
+            "{{ field.name }}": False,
 {% elif field.type in enum_names %}
 {% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
             "{{ field.name }}": "{{ enum.values[0] }}",
@@ -161,13 +164,14 @@ class Test{{ entity.name }}:
         payload = {
 {% for field in entity.fields if field.required %}
 {% if field.type == 'String' %}
-            "{{ field.name }}": "test_inexistente_{RUN_ID}",
+{% set field_val = "test_inex_" + field.name + "_" + loop.index|string + "_" %}
+            "{{ field.name }}": "{{ field_val }}" + RUN_ID,
 {% elif field.type == 'Integer' %}
             "{{ field.name }}": {{ loop.index }},
 {% elif field.type == 'Float' %}
             "{{ field.name }}": {{ loop.index }}.0,
 {% elif field.type == 'Boolean' %}
-            "{{ field.name }}": true,
+            "{{ field.name }}": True,
 {% elif field.type in enum_names %}
 {% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
             "{{ field.name }}": "{{ enum.values[0] }}",
@@ -191,13 +195,14 @@ class Test{{ entity.name }}:
         payload = {
 {% for field in entity.fields if field.required %}
 {% if field.type == 'String' %}
-            "{{ field.name }}": "test_eliminar_{{ field.name }}_{RUN_ID}",
+{% set field_val = "test_del_" + field.name + "_" + loop.index|string + "_" %}
+            "{{ field.name }}": "{{ field_val }}" + RUN_ID,
 {% elif field.type == 'Integer' %}
             "{{ field.name }}": {{ loop.index }},
 {% elif field.type == 'Float' %}
             "{{ field.name }}": {{ loop.index }}.0,
 {% elif field.type == 'Boolean' %}
-            "{{ field.name }}": true,
+            "{{ field.name }}": True,
 {% elif field.type in enum_names %}
 {% set enum = model.enums | selectattr('name', 'equalto', field.type) | first %}
             "{{ field.name }}": "{{ enum.values[0] }}",
