@@ -53,7 +53,7 @@ def parse_dsl(filepath: str):
         sys.exit(1)
 
     except SemanticError as e:
-        print(f"\nSemantic Error:\n  {e}")
+        print(e)
         sys.exit(1)
 
     except Exception as e:
@@ -80,7 +80,7 @@ def cmd_generate(args):
         output_dir=args.output,
         db_url=args.db
     ).generate_all()
-    print("\System successfully generated.")
+    print("System successfully enerated.")
     print(f"Copy 'output/.env.example' to 'output/.env' and change values.")
 
 

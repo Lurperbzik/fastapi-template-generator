@@ -257,40 +257,6 @@ La columna FK se nombra `<role>_id` en minúsculas. Ejemplos:
 
 ---
 
-## Sección `rules`
-
-Define reglas de negocio asociadas a entidades. En v1.0 se almacenan como metadatos del modelo y se incluyen como comentarios en el código generado.
-
-```
-rules {
-
-    rule {
-        entity: Ticket
-        rule: "fechaCierre must be null when estado != RESUELTO and estado != CERRADO"
-    }
-
-    rule {
-        entity: Ticket
-        rule: "asignadoA must not be null when estado == EN_PROGRESO"
-    }
-
-}
-```
-
-### Propiedades de una regla
-
-| Propiedad | Tipo | Obligatoria | Descripción |
-|---|---|---|---|
-| `entity` | Nombre de entidad | Sí | Entidad a la que aplica la regla |
-| `rule` | String entre comillas | Sí | Descripción de la regla en lenguaje natural estructurado |
-
-### Reglas de validación semántica
-
-- La entidad referenciada debe existir en la sección `entities`.
-- El texto de la regla no puede estar vacío.
-
----
-
 ## Ejemplo completo
 
 ```
@@ -408,20 +374,6 @@ relations {
         type: many-to-one
         role: autor
         required: true
-    }
-
-}
-
-rules {
-
-    rule {
-        entity: Ticket
-        rule: "fechaCierre must be null when estado != RESUELTO and estado != CERRADO"
-    }
-
-    rule {
-        entity: Ticket
-        rule: "asignadoA must not be null when estado == EN_PROGRESO"
     }
 
 }

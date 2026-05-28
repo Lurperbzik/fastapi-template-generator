@@ -28,7 +28,7 @@ class SemanticValidator:
 
         if self.errors:
             msg = "\n".join(f"  - {e}" for e in self.errors)
-            raise SemanticError(f"\nErrores semánticos encontrados:\n{msg}")
+            raise SemanticError(f"\nSemantic Error:\n{msg}")
 
     # ─── Enums ────────────────────────────────────────────────
 
@@ -36,17 +36,17 @@ class SemanticValidator:
         seen = set()
         for enum in self.model.enums:
             if enum.name in seen:
-                self._error(f"Enum duplicado: '{enum.name}'")
+                self._error(f"Duplicated Enum: '{enum.name}'")
             seen.add(enum.name)
 
             if not enum.values:
-                self._error(f"Enum '{enum.name}' no tiene valores definidos")
+                self._error(f"Enum '{enum.name}' has not defined values")
 
             seen_vals = set()
             for val in enum.values:
                 if val in seen_vals:
                     self._error(
-                        f"Valor duplicado '{val}' en enum '{enum.name}'"
+                        f"Duplicated value '{val}' on enum '{enum.name}'"
                     )
                 seen_vals.add(val)
 
@@ -56,12 +56,12 @@ class SemanticValidator:
         seen = set()
         for entity in self.model.entities:
             if entity.name in seen:
-                self._error(f"Entidad duplicada: '{entity.name}'")
+                self._error(f"Duplicated entity: '{entity.name}'")
             seen.add(entity.name)
 
             if not entity.fields:
                 self._error(
-                    f"Entidad '{entity.name}' no tiene campos definidos"
+                    f"Entity '{entity.name}' has not defined fields"
                 )
 
             self._validate_fields(entity)
@@ -71,21 +71,21 @@ class SemanticValidator:
         for f in entity.fields:
             if f.name in seen:
                 self._error(
-                    f"Campo duplicado '{f.name}' en entidad '{entity.name}'"
+                    f"Duplicated field '{f.name}' on entity '{entity.name}'"
                 )
             seen.add(f.name)
 
             # type obligatorio
             if not f.type:
                 self._error(
-                    f"Campo '{f.name}' en '{entity.name}' no tiene type"
+                    f"Field '{f.name}' on '{entity.name}' has no type"
                 )
                 continue
 
             # type debe existir
             if f.type not in self.VALID_TYPES:
                 self._error(
-                    f"Tipo desconocido '{f.type}' en "
+                    f"Unknown type '{f.type}' on "
                     f"'{entity.name}.{f.name}'"
                 )
 
@@ -94,15 +94,15 @@ class SemanticValidator:
                 self.STRING_TYPES | self.NUMERIC_TYPES
             ):
                 self._error(
-                    f"'min' no aplicable al tipo '{f.type}' "
-                    f"en '{entity.name}.{f.name}'"
+                    f"'min' no aplicable to type '{f.type}' "
+                    f"on '{entity.name}.{f.name}'"
                 )
             if f.max is not None and f.type not in (
                 self.STRING_TYPES | self.NUMERIC_TYPES
             ):
                 self._error(
-                    f"'max' no aplicable al tipo '{f.type}' "
-                    f"en '{entity.name}.{f.name}'"
+                    f"'max' no aplicable to type '{f.type}' "
+                    f"on '{entity.name}.{f.name}'"
                 )
 
             # min <= max si ambos presentes
@@ -110,7 +110,7 @@ class SemanticValidator:
                 if f.min > f.max:
                     self._error(
                         f"'min' ({f.min}) > 'max' ({f.max}) "
-                        f"en '{entity.name}.{f.name}'"
+                        f"on '{entity.name}.{f.name}'"
                     )
 
             # default coherente con el tipo
@@ -124,8 +124,8 @@ class SemanticValidator:
         if val == "now()":
             if f.type != "DateTime":
                 self._error(
-                    f"'now()' solo es válido para DateTime, "
-                    f"no para '{f.type}' en '{entity_name}.{f.name}'"
+                    f"'now()' just valid for DateTime, "
+                    f"no for '{f.type}' on '{entity_name}.{f.name}'"
                 )
             return
 
@@ -136,33 +136,33 @@ class SemanticValidator:
             )
             if val not in enum_def.values:
                 self._error(
-                    f"Default '{val}' no es un valor válido del enum "
-                    f"'{f.type}' en '{entity_name}.{f.name}'. "
-                    f"Valores posibles: {enum_def.values}"
+                    f"Default '{val}' is not valid on enum "
+                    f"'{f.type}' on '{entity_name}.{f.name}'. "
+                    f"Valid values: {enum_def.values}"
                 )
             return
 
         # Tipos primitivos
         if f.type == "Boolean" and val not in ("true", "false"):
             self._error(
-                f"Default '{val}' no es un Boolean válido "
-                f"en '{entity_name}.{f.name}'"
+                f"Default '{val}' is not a valid Boolean "
+                f"on '{entity_name}.{f.name}'"
             )
         elif f.type == "Integer":
             try:
                 int(val)
             except ValueError:
                 self._error(
-                    f"Default '{val}' no es un Integer válido "
-                    f"en '{entity_name}.{f.name}'"
+                    f"Default '{val}' is not a valid Integer "
+                    f"on '{entity_name}.{f.name}'"
                 )
         elif f.type == "Float":
             try:
                 float(val)
             except ValueError:
                 self._error(
-                    f"Default '{val}' no es un Float válido "
-                    f"en '{entity_name}.{f.name}'"
+                    f"Default '{val}' is not a valid float "
+                    f"on '{entity_name}.{f.name}'"
                 )
 
     # ─── Relaciones ───────────────────────────────────────────
@@ -171,11 +171,11 @@ class SemanticValidator:
         for r in self.model.relations:
             if r.from_entity not in self.entity_names:
                 self._error(
-                    f"Relación con 'from' desconocido: '{r.from_entity}'"
+                    f"Relation with 'from' unknown: '{r.from_entity}'"
                 )
             if r.to_entity not in self.entity_names:
                 self._error(
-                    f"Relación con 'to' desconocido: '{r.to_entity}'"
+                    f"Relation with 'to' unknown: '{r.to_entity}'"
                 )
 
         # Detectar relaciones ambiguas: mismo from+to sin role
@@ -185,8 +185,8 @@ class SemanticValidator:
             if key in seen:
                 if not r.role or not seen[key].role:
                     self._error(
-                        f"Relaciones múltiples entre '{r.from_entity}' y "
-                        f"'{r.to_entity}' requieren 'role' en ambas"
+                        f"Multiple relations between '{r.from_entity}' and "
+                        f"'{r.to_entity}' required 'role' in both"
                     )
             seen[key] = r
 
